@@ -1,0 +1,8 @@
+.cell {
+	width: 15px;
+	height: 15px;
+	background-color: green;
+}
+.snake {
+	background-color: red;
+}
