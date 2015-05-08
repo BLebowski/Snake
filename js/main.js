@@ -8,21 +8,31 @@ Vector.prototype.plus = function(obj){
 }
 
 var KEY_CODE = {
-	LEFT: 37,
-	UP: 38,
-	RIGHT: 39,
-	DOWN: 40
+	'w': 37,
+	'n': 38,
+	'e': 39,
+	's': 40
 };
 
+var changeArr = [];
+function MakeSmth(dir){
+	this.direct = dir;
+	this.count = 1;
+}
+MakeSmth.prototype.aaaa = function(){
+
+
+
+	this.count ++;
+}
+
 function changeDirection(e){
-	if(e.keyCode === KEY_CODE.LEFT)
-		snake[0].direction = "w";
-	else if(e.keyCode === KEY_CODE.UP)
-		snake[0].direction = "n";
-	else if(e.keyCode === KEY_CODE.RIGHT)
-		snake[0].direction = "e";
-	else if(e.keyCode === KEY_CODE.DOWN)
-		snake[0].direction = "s";
+	for(var prop in KEY_CODE){
+		if(e.keyCode === KEY_CODE[prop]){
+			snake[0].direction = prop;
+			break;
+		}
+	}
 }
 
 var body = document.body;
@@ -55,6 +65,8 @@ function SnakePart(x,y,dir,type){
 	this.direction = dir;
 	this.coord = new Vector(x,y);
 	this.type = type;
+	if(type === "tail")
+		this.futureCoord = this.coord; 
 }
 
 function changeCoordinate(context){
@@ -68,13 +80,16 @@ function changeCoordinate(context){
 		context.coord.y = 0;
 }
 
-SnakePart.prototype.move = function(i){
+SnakePart.prototype.move = function(i, ev){
 	var nextDir = this.look();
 	if(this.type === "head"){
 		if(nextDir === "apple"){
 			snake.push(new SnakePart(snake[snake.length - 1].coord.x, snake[snake.length - 1].coord.y, snake[snake.length - 1].direction, "tail"));
 			apple = new Apple(Number((Math.random()*9).toFixed(0)), Number((Math.random()*9).toFixed(0)));
 			apple.be();
+		}
+		if(snake.length !== 1){
+			snake[1].futureCoord = this.coord;
 		}
 		world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
 		this.coord = this.coord.plus(directions[this.direction]);
@@ -83,12 +98,15 @@ SnakePart.prototype.move = function(i){
 		world[this.coord.y][this.coord.x].style.backgroundColor = 'red';
 	}
 	else if (this.type === "tail"){
-		this.direction = snake[i-1].direction;
-		world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
-		this.coord = this.coord.plus(directions[this.direction]);
-		if(nextDir === undefined)
-			changeCoordinate(this);
-		world[this.coord.y][this.coord.x].style.backgroundColor = 'red';
+		if(ev){
+			world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
+			world[this.futureCoord.y][this.futureCoord.x].style.backgroundColor = 'red';
+			this.coord = this.futureCoord;
+		} else {
+			snake[i+1].futureCoord = this.coord;
+			world[this.futureCoord.y][this.futureCoord.x].style.backgroundColor = 'red';
+			this.coord = this.futureCoord;
+		}
 	}
 }
 
@@ -101,16 +119,18 @@ SnakePart.prototype.look = function(){
 	return world[s.x][s.y];
 }
 
-var snake = [new SnakePart(0,0,'s', "head")];
+var snake = [new SnakePart(0, 0, 's', "head")];
 
 function turn(){
+
 	var s = snake;
 	var len = s.length;
-	(function(g){
-		for(var i = 0; i < len; i++){
-			g[i].move(i);
-		}
-	})(s);
+	for(var i = 0; i < len; i++){
+		if(i===len-1)
+			s[i].move(i,true);
+		else
+			s[i].move(i);
+	}
 }
 
 var k = setInterval(turn, 1000);
