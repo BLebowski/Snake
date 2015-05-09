@@ -1,49 +1,33 @@
-function Vector(x,y){
-	this.x = x;
-	this.y = y;
-}
-
-Vector.prototype.plus = function(obj){
-	return new Vector(this.x + obj.x, this.y + obj.y);
-}
-
-var KEY_CODE = {
-	'w': 37,
-	'n': 38,
-	'e': 39,
-	's': 40
-};
-
-var changeArr = [];
-function MakeSmth(dir){
-	this.direct = dir;
-	this.count = 1;
-}
-MakeSmth.prototype.aaaa = function(){
-
-
-
-	this.count ++;
-}
-
-function changeDirection(e){
-	for(var prop in KEY_CODE){
-		if(e.keyCode === KEY_CODE[prop]){
-			snake[0].direction = prop;
-			break;
-		}
-	}
-}
-
-var body = document.body;
-body.addEventListener('keyup', changeDirection, false);
 
 var directions = {
 	"n": new Vector(0,-1),
 	"w": new Vector(-1,0),
 	"s": new Vector(0, 1),
 	'e': new Vector(1,0)
+},
+KEY_CODE = {
+	'w': 37,
+	'n': 38,
+	'e': 39,
+	's': 40
 };
+
+function Vector(x,y){
+	this.x = x;
+	this.y = y;
+}
+
+Vector.prototype.plus = function(vect){
+	return new Vector(this.x + vect.x, this.y + vect.y);
+}
+
+Vector.prototype.randomVector = function(world){
+	var x = Number((Math.random()*(world[0].length-1)).toFixed(0));
+	var y = Number((Math.random()*(world.length-1)).toFixed(0));
+	return new Vector(x,y);
+}
+
+var body = document.body;
 
 var world = function(){
 	var finArr = [];
@@ -61,56 +45,27 @@ var world = function(){
 }();
 
 
-function SnakePart(x,y,dir,type){
-	this.direction = dir;
-	this.coord = new Vector(x,y);
-	this.type = type;
-	if(type === "tail")
-		this.futureCoord = this.coord; 
-}
+// CLASS SNAKE
 
-function changeCoordinate(context){
-	if(context.coord.x === 10)
-		context.coord.x = 0;
-	if(context.coord.x === -1)
-		context.coord.x = 9;
-	if(context.coord.y === -1)
-		context.coord.y = 9;
-	if(context.coord.y === 10)
-		context.coord.y = 0;
+function Snake(vect){
+	this.coord = vect;
 }
-
-SnakePart.prototype.move = function(i, ev){
-	var nextDir = this.look();
-	if(this.type === "head"){
-		if(nextDir === "apple"){
-			snake.push(new SnakePart(snake[snake.length - 1].coord.x, snake[snake.length - 1].coord.y, snake[snake.length - 1].direction, "tail"));
-			apple = new Apple(Number((Math.random()*9).toFixed(0)), Number((Math.random()*9).toFixed(0)));
-			apple.be();
-		}
-		if(snake.length !== 1){
-			snake[1].futureCoord = this.coord;
-		}
-		world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
-		this.coord = this.coord.plus(directions[this.direction]);
-		if(nextDir === undefined)
-			changeCoordinate(this);
-		world[this.coord.y][this.coord.x].style.backgroundColor = 'red';
-	}
-	else if (this.type === "tail"){
-		if(ev){
-			world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
-			world[this.futureCoord.y][this.futureCoord.x].style.backgroundColor = 'red';
-			this.coord = this.futureCoord;
-		} else {
-			snake[i+1].futureCoord = this.coord;
-			world[this.futureCoord.y][this.futureCoord.x].style.backgroundColor = 'red';
-			this.coord = this.futureCoord;
+Snake.prototype.changeDirection = function(e) {
+	for(var prop in KEY_CODE){
+		if(e.keyCode === KEY_CODE[prop]){
+			snakeParts[0].direction = prop;
+			break;
 		}
 	}
 }
 
-SnakePart.prototype.look = function(){
+// SUBCLASS HEAD. SNAKE INHERIT
+
+function Head(vect, direction){
+	Snake.call(this,vect);
+	this.direction = direction;
+}
+Head.prototype.look = function(){
 	var s = this.coord.plus(directions[this.direction]);
 	if(s.x === apple.coord.x && s.y === apple.coord.y)
 		return "apple";
@@ -118,12 +73,72 @@ SnakePart.prototype.look = function(){
 		return world[s.x];
 	return world[s.x][s.y];
 }
+Head.prototype.move = function(){
+	var nextDir = this.look();
+	if(nextDir === "apple"){
+		snakeParts.push(new Body(new Vector(snakeParts[snakeParts.length - 1].coord.x, snakeParts[snakeParts.length - 1].coord.y)));
+		apple = new Apple(Vector.prototype.randomVector(world));
+		apple.be();
+	}
+	if(snakeParts.length !== 1){
+		snakeParts[1].futureCoord = this.coord;
+	}
+	world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
+	this.coord = this.coord.plus(directions[this.direction]);
+	if(nextDir === undefined)
+		this.changeCoordinates();
+	world[this.coord.y][this.coord.x].style.backgroundColor = 'red';
+}
+Head.prototype.changeCoordinates = function(){
+	if(this.coord.x === world[0].length)
+		this.coord.x = 0;
+	else if(this.coord.x === -1)
+		this.coord.x = world[0].length -1;
+	if(this.coord.y === world.length)
+		this.coord.y = 0;
+	else if(this.coord.y === -1)
+		this.coord.y = world.length -1;
+}
 
-var snake = [new SnakePart(0, 0, 's', "head")];
+// SUBCLASS BODY. SNAKE INHERIT
+
+function Body(vect){
+	Snake.call(this,vect);
+	this.futureCoord = vect;
+}
+Body.prototype.move = function(i, ev){
+	if(ev){
+		console.log("tail coord: "+ this.coord);
+		world[this.coord.y][this.coord.x].style.backgroundColor = 'green';
+	} else {
+		snakeParts[i+1].futureCoord = this.coord;
+	}
+		world[this.futureCoord.y][this.futureCoord.x].style.backgroundColor = 'red';
+		this.coord = this.futureCoord;
+}
+
+// APPLE CONSTRUCTOR
+
+function Apple(vect){
+	console.log('new V: '+ vect);
+	this.coord = vect;
+}
+
+Apple.prototype.be = function (){
+	for(var i = 0; i<snakeParts.length; i++){
+		if(snakeParts[i].coord.x === this.coord.x && snakeParts[i].coord.y === this.coord.y) {
+			apple = new Apple(Vector.prototype.randomVector(world));
+			apple.be();
+		}
+	}
+	world[this.coord.y][this.coord.x].style.backgroundColor = 'yellow';
+}
+
+// MAKING WORLD ALIFE
 
 function turn(){
 
-	var s = snake;
+	var s = snakeParts;
 	var len = s.length;
 	for(var i = 0; i < len; i++){
 		if(i===len-1)
@@ -133,21 +148,14 @@ function turn(){
 	}
 }
 
-var k = setInterval(turn, 1000);
+var snakeParts = [new Head(Vector.prototype.randomVector(world), 's')];
 
-function Apple(x,y){
-	this.coord = new Vector(x,y);
-}
 
-Apple.prototype.be = function (){
-	for(var i = 0; i<snake.length; i++){
-		if(snake[i].coord.x === this.coord.x && snake[i].coord.y === this.coord.y) {
-			apple = new Apple(Number((Math.random()*9).toFixed(0)), Number((Math.random()*9).toFixed(0)));
-			apple.be();
-		}
-	}
-	world[this.coord.y][this.coord.x].style.backgroundColor = 'yellow';
-}
-
-var apple = new Apple(Number((Math.random()*9).toFixed(0)), Number((Math.random()*9).toFixed(0)));
+var apple = new Apple(Vector.prototype.randomVector(world));
 apple.be();
+
+
+
+body.addEventListener('keyup', Snake.prototype.changeDirection, false);
+
+var k = setInterval(turn, 1500);
