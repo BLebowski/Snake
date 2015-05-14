@@ -1,8 +1,18 @@
-.cell {
+table {
+	border-spacing: 0;
+	border: 1px solid black;
+}
+td {
 	width: 15px;
 	height: 15px;
-	background-color: green;
 }
-.snake {
-	background-color: red;
+.tail{
+	background: url(../css/snake_skin.jpg);
+		background-size: 100%;
+		background-position: center;
+}
+.apple {
+	background-image: url(../css/mushroom.png);
+	background-size: 100%;
+	background-position: center;
 }
