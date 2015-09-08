@@ -59,9 +59,6 @@
 		return finArr;
 	}();
 
-
-	// 
-
 	function Snake(vect){
 		this.coord = vect;
 	}
@@ -101,42 +98,58 @@
 	}
 	Head.prototype.look = function(){
 		var s = this.coord.plus(directions[this.direction]);
+		changeCoordinates(s);
 		if(s.x === apple.coord.x &&
-		 s.y === apple.coord.y)
-			return "apple";
+		 s.y === apple.coord.y){
+		 	return "apple";
+		}	
 		if(world[s.x] === undefined)
 			return world[s.x];
+		for(var i = 0; i < snakeParts.length; i++){
+			if(snakeParts[i].coord.x === s.x && snakeParts[i].coord.y === s.y)
+			return  "over";
+			}
 		return world[s.x][s.y];
 	}
 	Head.prototype.move = function(i,end){
 		var sn = snakeParts;
 		var nextDir = this.look(), funAppleCoord;
 		if(nextDir === "apple"){
+			score++;
+			selectionSpeed(score);
+			sc.innerHTML = score;
 			snakeParts.push(new Body(new Vector(snakeParts[snakeParts.length - 1].coord.x, snakeParts[snakeParts.length - 1].coord.y)));
 			apple = new Apple(Vector.prototype.randomVector(world));
 			apple.be(this.coord.plus(directions[this.direction]), sn);
+		}
+		if (nextDir === "over"){
+			clearInterval(k);
+			alert("Game Over! you score : " + score);
+			if (score > bestScore) window.localStorage.setItem("snake_score",score);
 		}
 		if(!end){
 			snakeParts[1].futureCoord = this.coord;
 		}else{
 			world[this.coord.y][this.coord.x].className = "cell";
 		}
+
 		this.coord = this.coord.plus(directions[this.direction]);
-		if(nextDir === undefined)
-			this.changeCoordinates();
+		changeCoordinates(this.coord);
+
 		world[this.coord.y][this.coord.x].className = "head";
 	}
-	Head.prototype.changeCoordinates = function(){
-		if(this.coord.x === world[0].length)
-			this.coord.x = 0;
-		else if(this.coord.x === -1)
-			this.coord.x = world[0].length -1;
-		if(this.coord.y === world.length)
-			this.coord.y = 0;
-		else if(this.coord.y === -1)
-			this.coord.y = world.length -1;
-	}
 
+		function changeCoordinates(coord){
+		if(coord.x === world[0].length)
+			coord.x = 0;
+		else if(coord.x === -1)
+			coord.x = world[0].length -1;
+		if(coord.y === world.length)
+			coord.y = 0;
+		else if(coord.y === -1)
+			coord.y = world.length -1;
+		return coord;
+	}
 	// SUBCLASS BODY. SNAKE INHERIT
 
 	function Body(vect){
@@ -163,18 +176,19 @@
 
 	Apple.prototype.be = function (vect, snakeP){
 		if(vect && this.coord.x === vect.x && this.coord.y === vect.y){
-			world[this.coord.y][this.coord.x].className = "cell";
 			apple = new Apple(Vector.prototype.randomVector(world));
 			apple.be(vect, snakeP);
+			return;
 		}
 		for(var i = 0; i<snakeP.length; i++){
 			if(snakeP[i].coord.x === this.coord.x && snakeP[i].coord.y === this.coord.y) {
-				world[this.coord.y][this.coord.x].className = "cell";
+				world[this.coord.y][this.coord.x].className = "tail";
 				apple = new Apple(Vector.prototype.randomVector(world));
 				apple.be(vect, snakeP);
+				return;
 			}
 		}
-		world[this.coord.y][this.coord.x].className = "apple";;
+		 world[this.coord.y][this.coord.x].className = "apple";
 	}
 
 	// MAKING WORLD ALIFE
@@ -191,77 +205,38 @@
 		}
 	}
 
-	var snakeParts = [new Head(Vector.prototype.randomVector(world), 's')];
+	function selectionSpeed(score) {
+		if (score % 4 === 0 && score < 32){
+			speed -= 200;
+			clearInterval(k);
+			k = setInterval(turn,speed);
+		}
+	}
+    var snakeParts,apple,k,score,bestScore,speed;
 
-	document.getElementById('clearInt').addEventListener('click', function(){
-		clearInterval(k);
+	var sc = document.getElementById("score");
+	var bestsc = document.getElementById("bestscore");
+
+	if (!window.localStorage.getItem("snake_score"))
+	window.localStorage.setItem("snake_score","0");
+
+	document.getElementById('start').addEventListener('click', function(){
+		world.forEach(function(pow){
+			pow.forEach(function(cell){
+				cell.className = "cell";
+			});
+		});
+		 snakeParts = [new Head(Vector.prototype.randomVector(world), "s")];
+		 apple = new Apple(Vector.prototype.randomVector(world));
+		 apple.be(0,snakeParts);
+		 speed = 1600;
+		 score = 0;
+		 bestScore = +window.localStorage.getItem("snake_score");
+		 sc.innerHTML = score;
+		 bestsc.innerHTML = "best score: " + bestScore;
+		 k = setInterval(turn, speed);
 	},false);
 
-	var apple = new Apple(Vector.prototype.randomVector(world));
-	apple.be(0,snakeParts);
-
-
-
 	body.addEventListener('keyup', Snake.prototype.changeDirection, false);
-
-	var k = setInterval(turn, 1500);
+	
 })();
-////////////////////////////////////////////
-
-function	require(name)	{
-	if	(name	in	require.cache)
-			return	require.cache[name];
-	var	code	=	new	Function("exports,	module",	readFile(name));
-	var	exports	=	{},	module	=	{exports:	exports};
-	code(exports,	module);
-	require.cache[name]	=	module.exports;
-	return	module.exports;
-}
-require.cache	=	Object.create(null);
-
-////
-
-var	defineCache	=	Object.create(null);
-var	currentMod	=	null;
-
-function	getModule(name)	{
-
-	if	(name	in	defineCache)
-			return	defineCache[name];
-
-	var	module	=	{exports:	null,
-					loaded:	false,
-					onLoad:	[]};
-
-	defineCache[name]	=	module;
-
-	backgroundReadFile(name,	function(code)	{  // backgroundReadFile принимает	имя	файла	и	функцию, и	вызывает	эту	функцию	с	содержимым	этого	файла,	как	только	он	будет загружен
-			currentMod	=	module;
-			new	Function("",	code)();
-	});
-	return	module;
-}
-
-function	define(depNames,	moduleFunction)	{
-	var	myMod	=	currentMod;
-	var	deps	=	depNames.map(getModule);
-
-	deps.forEach(function(mod)	{
-		if	(!mod.loaded)
-				mod.onLoad.push(whenDepsLoaded);
-	});
-
-	function	whenDepsLoaded()	{
-			if	(!deps.every(function(m)	{	return	m.loaded;	}))
-					return;
-			var	args	=	deps.map(function(m)	{	return	m.exports;	});
-			var	exports	=	moduleFunction.apply(null,	args);
-			if	(myMod)	{
-					myMod.exports	=	exports;
-					myMod.loaded	=	true;
-					myMod.onLoad.every(function(f)	{	f();	});
-			}
-	}
-
-	whenDepsLoaded();
-}
